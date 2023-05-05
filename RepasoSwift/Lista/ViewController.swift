@@ -26,22 +26,40 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let celda = tableView.dequeueReusableCell(withIdentifier: "celdaPelicula") as! CeldaPeliculaController
-        celda.lblTitulo.text = peliculas[indexPath.row].titulo
-        celda.lblAño.text = peliculas[indexPath.row].año
+        celda.lblTitulo.text = peliculas[indexPath.row].nombre
+        celda.lblAño.text = peliculas[indexPath.row].anio
         celda.lblDirector.text = peliculas[indexPath.row].director
         
         return celda
     }
     
     //Llamamos al modelo
+    @IBOutlet weak var tvPeliculas: UITableView!
     var peliculas : [Pelicula] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        //Llenamos con datos
-        peliculas.append(Pelicula(titulo: "Titanic", director: "James Cameron", año: "1999"))
-        peliculas.append(Pelicula(titulo: "Mario Bros", director: "No se", año: "2023"))
-        peliculas.append(Pelicula(titulo: "Pelicula 3", director: "No se", año: "2000"))
+        let url = URL(string: "http://127.0.0.1:8000/api/peliculas")!
+        var solicitud = URLRequest(url: url)
+        solicitud.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        solicitud.setValue("application/json", forHTTPHeaderField: "Accept")
+        solicitud.httpMethod = "GET"
+        
+        let task = URLSession.shared.dataTask(with: url){
+            data, response, error in
+            if let data = data {
+                if let peliculas = try?
+                    JSONDecoder().decode([Pelicula].self,from: data){
+                    self.peliculas = peliculas
+                    DispatchQueue.global(qos: .background).async {
+                        DispatchQueue.main.async {
+                            self.tvPeliculas.reloadData()
+                        }
+                    }
+                }
+            }
+        }
+        task.resume()
     }
 }
